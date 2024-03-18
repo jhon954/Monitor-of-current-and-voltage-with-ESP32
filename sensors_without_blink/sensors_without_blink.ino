@@ -5,9 +5,9 @@
 
 // Constants for calibration
 const float vCalibration = 0.0;
-const float currCalibration = 0.735;
+const float currCalibration = 5.0;
  
-// Blynk and WiFi credentials
+//credentials
 const char ssid[] = "MotoKal";
 const char pass[] = "kall8900";
 
@@ -47,5 +47,6 @@ void sendEnergyData()
   lastMillis = currentMillis;
  
   // Print data to Serial for debugging
-  Serial.printf("Vrms: %.2fV\tIrms: %.4fA\tPower: %.4fW\tkWh: %.5fkWh\n", emon.Vrms, emon.Irms, emon.apparentPower, kWh);
+  //Serial.printf("Vrms: %.2fV\tIrms: %.4fA\tPower: %.4fW\tkWh: %.5fkWh\n", emon.Vrms, emon.Irms, emon.apparentPower, kWh);
+    Serial.println(emon.Irms);
 }
