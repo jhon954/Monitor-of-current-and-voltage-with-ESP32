@@ -82,6 +82,7 @@ int azure_pnp_send_telemetry(azure_iot_t* azure_iot);
  *
  * return        int                0 on success, non-zero if any failure occurs.
  */
+
 int azure_pnp_handle_command_request(azure_iot_t* azure_iot, command_request_t command_request);
 
 /*

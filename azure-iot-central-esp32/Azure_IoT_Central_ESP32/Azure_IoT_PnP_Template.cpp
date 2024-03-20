@@ -12,12 +12,9 @@
 
 #include <az_precondition_internal.h>
 
-// For DHT sensor
-//#include <Adafruit_Sensor.h>
-//#include <DHT.h>
-//To calculate voltage and current
 #include "EmonLib.h"
 #include "iot_configs.h"
+#include <Wire.h>
 
 // Constants for calibration
 const float vCalibration = 0.0;
@@ -26,10 +23,6 @@ const float currCalibration = 5.0;
 // Variables for energy calculation
 float kWh = 0.0;
 unsigned long lastMillis = millis();
-
-// For sunlight sensor
-#include <Wire.h>
-//#include "Adafruit_SI1145.h"
 
 /* --- Defines --- */
 #define AZURE_PNP_MODEL_ID "dtmi:azureiot:devkit:freertos:Esp32AzureIotKit;1"
@@ -45,10 +38,10 @@ unsigned long lastMillis = millis();
 #define SAMPLE_TOTAL_MEMORY_PROPERTY_NAME              "totalMemory"
 
 #define SAMPLE_MANUFACTURER_PROPERTY_VALUE             "ESPRESSIF"
-#define SAMPLE_MODEL_PROPERTY_VALUE                    "ESP32 Azure IoT Kit"
+#define SAMPLE_MODEL_PROPERTY_VALUE                    "ESP32"
 #define SAMPLE_VERSION_PROPERTY_VALUE                  "1.0.0"
 #define SAMPLE_OS_NAME_PROPERTY_VALUE                  "FreeRTOS"
-#define SAMPLE_ARCHITECTURE_PROPERTY_VALUE             "ESP32 WROVER-B"
+#define SAMPLE_ARCHITECTURE_PROPERTY_VALUE             "ESP32 WROOM32"
 #define SAMPLE_PROCESSOR_MANUFACTURER_PROPERTY_VALUE   "ESPRESSIF"
 // The next couple properties are in KiloBytes.
 #define SAMPLE_TOTAL_STORAGE_PROPERTY_VALUE            4096
@@ -56,13 +49,7 @@ unsigned long lastMillis = millis();
 
 #define TELEMETRY_PROP_NAME_VOLTAGE                      "voltage"
 #define TELEMETRY_PROP_NAME_CURRENT                      "current"
-//#define TELEMETRY_PROP_NAME_UV_INDEX                   "uvIndex"
-//#define TELEMETRY_PROP_NAME_VISIBLE_LIGHT              "visibleLight"
-//#define TELEMETRY_PROP_NAME_INFRARED_LIGHT             "infraredLight"
 
-static az_span COMMAND_NAME_TOGGLE_LED_1 = AZ_SPAN_FROM_STR("ToggleLed1");
-static az_span COMMAND_NAME_TOGGLE_LED_2 = AZ_SPAN_FROM_STR("ToggleLed2");
-static az_span COMMAND_NAME_DISPLAY_TEXT = AZ_SPAN_FROM_STR("DisplayText");
 #define COMMAND_RESPONSE_CODE_ACCEPTED                 202
 #define COMMAND_RESPONSE_CODE_REJECTED                 404
 
@@ -184,30 +171,6 @@ int azure_pnp_handle_command_request(azure_iot_t* azure_iot, command_request_t c
 
   uint16_t response_code;
 
-  if (az_span_is_content_equal(command.command_name, COMMAND_NAME_TOGGLE_LED_1))
-  {
-    led1_on = !led1_on;
-    LogInfo("LED 1 state: %s", (led1_on ? "ON" : "OFF"));
-    response_code = COMMAND_RESPONSE_CODE_ACCEPTED;
-  }
-  else if (az_span_is_content_equal(command.command_name, COMMAND_NAME_TOGGLE_LED_2))
-  {
-    led2_on = !led2_on;
-    LogInfo("LED 2 state: %s", (led2_on ? "ON" : "OFF"));
-    response_code = COMMAND_RESPONSE_CODE_ACCEPTED;
-  }
-  else if (az_span_is_content_equal(command.command_name, COMMAND_NAME_DISPLAY_TEXT))
-  {
-    // The payload comes surrounded by quotes, so to remove them we offset the payload by 1 and its size by 2.
-    LogInfo("OLED display: %.*s", az_span_size(command.payload) - 2, az_span_ptr(command.payload) + 1);
-    response_code = COMMAND_RESPONSE_CODE_ACCEPTED;
-  }
-  else
-  {
-    LogError("Command not recognized (%.*s).", az_span_size(command.command_name), az_span_ptr(command.command_name));
-    response_code = COMMAND_RESPONSE_CODE_REJECTED;
-  }
-
   return azure_iot_send_command_response(azure_iot, command.request_id, response_code, AZ_SPAN_EMPTY);
 }
 
@@ -228,14 +191,9 @@ int azure_pnp_handle_properties_update(azure_iot_t* azure_iot, az_span propertie
   return RESULT_OK;
 }
 
-/* --- Create instance of the DHT11 sensor --- */
-//static DHT dht(DHT_PIN, DHT_TYPE);
 
 // EnergyMonitor instance
 static EnergyMonitor emon;
-
-/* --- Create instance of the sunlight (SI1145) sensor --- */
-//static Adafruit_SI1145 uv = Adafruit_SI1145();
 
 void initSensors()
 {
@@ -251,7 +209,6 @@ static int generate_telemetry_payload(uint8_t* payload_buffer, size_t payload_bu
   az_span payload_buffer_span = az_span_create(payload_buffer, payload_buffer_size);
   az_span json_span;
   float voltage, current;
-  //int32_t visibleLight, infraredLight;
 
   emon.calcVI(20, 2000); // Calculate all. No.of half wavelengths (crossings), time-out
  
@@ -263,14 +220,6 @@ static int generate_telemetry_payload(uint8_t* payload_buffer, size_t payload_bu
   // Acquiring data from sensors.
   current = emon.Irms;
   voltage = 2.2;
-  
-  //uvIndex = 2;
-  // The index is multiplied by 100 so to get the
-  // integer index, divide by 100!
-  //uvIndex /= 100.0;  
-  
-  //visibleLight = 3;
-  //infraredLight = 4;
 
   rc = az_json_writer_init(&jw, payload_buffer_span, NULL);
   EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed initializing json writer for telemetry.");
@@ -287,21 +236,6 @@ static int generate_telemetry_payload(uint8_t* payload_buffer, size_t payload_bu
   EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed adding current property name to telemetry payload.");
   rc = az_json_writer_append_double(&jw, current, DOUBLE_DECIMAL_PLACE_DIGITS);
   EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed adding current property value to telemetry payload. ");
-
-  //rc = az_json_writer_append_property_name(&jw, AZ_SPAN_FROM_STR(TELEMETRY_PROP_NAME_UV_INDEX));
-  //EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed adding uv index property name to telemetry payload.");
-  //rc = az_json_writer_append_double(&jw, uvIndex, DOUBLE_DECIMAL_PLACE_DIGITS);
-  //EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed adding uv index property value to telemetry payload.");
-
-  //rc = az_json_writer_append_property_name(&jw, AZ_SPAN_FROM_STR(TELEMETRY_PROP_NAME_VISIBLE_LIGHT));
-  //EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed adding visible light property name to telemetry payload.");
-  //rc = az_json_writer_append_int32(&jw, visibleLight);
-  //EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed adding visible light property value to telemetry payload.");
-
-  //rc = az_json_writer_append_property_name(&jw, AZ_SPAN_FROM_STR(TELEMETRY_PROP_NAME_INFRARED_LIGHT));
-  //EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed adding infrared light property name to telemetry payload.");
-  //rc = az_json_writer_append_int32(&jw, infraredLight);
-  //EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed adding infrared light property value to telemetry payload.");
 
   rc = az_json_writer_append_end_object(&jw);
   EXIT_IF_AZ_FAILED(rc, RESULT_ERROR, "Failed closing telemetry json payload.");
