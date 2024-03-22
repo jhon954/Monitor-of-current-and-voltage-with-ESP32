@@ -1,10 +1,11 @@
 # Monitor-of-current-and-voltage-with-ESP32
 
-### In this project, voltage and current data taken with sensors is sent to Azure IoT Central using an ESP32.
+#### In this project, data is collected with current and voltage sensors in order to monitor energy consumption. The data is processed and sent to Azure IoT Central using an ESP32.
 
-## The materials used are listed in the following table.
+## Table of materials
+The materials used are listed in the following table.
 
-| Cant | Material |
+| Quantity | Material |
 |--------------|--------------|
 | 3 | Current sensor SCT013 100Amp   |
 | 3 | Voltage sensor    |
@@ -13,3 +14,6 @@
 | 2 | 10K ohm resistor |
 | 1 | 30 ohm resistor |
 | 1 | 10uF capacitor |
+
+## Electric diagram
+The following diagram was prepared with Fritzing, and shows how all components should be connected.

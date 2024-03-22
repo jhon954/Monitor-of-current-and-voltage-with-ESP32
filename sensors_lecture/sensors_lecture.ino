@@ -4,12 +4,12 @@
 #include <Wire.h>
 
 // Constants for calibration
-const float vCalibration = 0.0;
-const float currCalibration = 5.0;
+const float vCalibration = 1.3;
+const float currCalibration = 2.6;
  
 //credentials
-const char ssid[] = "MotoKal";
-const char pass[] = "kall8900";
+const char ssid[] = "Your SSID";
+const char pass[] = "Your password";
 
 // EnergyMonitor instance
 EnergyMonitor emon;
@@ -47,6 +47,5 @@ void sendEnergyData()
   lastMillis = currentMillis;
  
   // Print data to Serial for debugging
-  //Serial.printf("Vrms: %.2fV\tIrms: %.4fA\tPower: %.4fW\tkWh: %.5fkWh\n", emon.Vrms, emon.Irms, emon.apparentPower, kWh);
-    Serial.println(emon.Irms);
+  Serial.printf("Vrms: %.2fV\tIrms: %.4fAn", emon.Vrms, emon.Irms);
 }

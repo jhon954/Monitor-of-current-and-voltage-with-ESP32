@@ -1,0 +1,1 @@
+### In this arduino code only the values obtained from the voltage and current sensors are readed and showed in the serial monitor. It can be used to calibrate the sensors by changing the values of the variables "vCalibration" and "currCalibration".
